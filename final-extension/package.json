@@ -1,0 +1,20 @@
+{
+  "name": "final-extension",
+  "version": "1.0.0",
+  "description": "This is a custom task",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "{{Author Name}}",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.4",
+    "azure-pipelines-task-lib": "^4.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.26",
+    "@types/q": "^1.5.8",
+    "typescript": "^4.0.2"
+  }
+}

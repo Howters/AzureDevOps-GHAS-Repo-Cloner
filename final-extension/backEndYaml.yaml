@@ -1,0 +1,11 @@
+### Do Not Remove This .yaml File!
+pool:
+    name: Default
+steps:
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet restore'
+    inputs:
+      command: restore
+      projects: '**/*.csproj'
+      feedsToUse: config
+      nugetConfigPath: ${folderPath}

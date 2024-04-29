@@ -1,0 +1,43 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
+  "id": "f134df89-e65f-47f4-a118-94d9128fd2e4",
+  "name": "PipelineTest",
+  "friendlyName": "Pipeline Testing",
+  "description": "Copy your code and make it a new repo + the pipeline",
+  "helpMarkDown": "",
+  "category": "Utility",
+  "author": "Hans",
+  "version": {
+    "Major": 0,
+    "Minor": 2,
+    "Patch": 2
+  },
+  "instanceNameFormat": "Copy Code",
+  "inputs": [
+    {
+      "name": "projectFolder",
+      "type": "string",
+      "label": "Project Folder",
+      "defaultValue": "",
+      "required": true,
+      "helpMarkDown": "A sample string"
+    },
+    {
+      "name": "projectType",
+      "type": "pickList",
+      "label": "Project Type",
+      "defaultValue": "",
+      "required": true,
+      "helpMarkDown": "Select one",
+      "options": {
+        "front-end": "Front-End",
+        "back-end": "Back-End"
+      }
+    }
+  ],
+  "execution": {
+    "Node10": {
+      "target": "index.js"
+    }
+  }
+}
