@@ -26,4 +26,4 @@ This repository contains an Azure DevOps extension designed to streamline the pr
 
 ## License
 
-This project is made for Bina Nusantara IT Division.
+This extension is made for Bina Nusantara IT Division.
