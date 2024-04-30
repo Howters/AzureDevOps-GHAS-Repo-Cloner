@@ -22,7 +22,7 @@ This repository contains an Azure DevOps extension designed to streamline the pr
 
 ## Contributors
 
-- Howters
+- Howters (https://github.com/howters)
 
 ## License
 
