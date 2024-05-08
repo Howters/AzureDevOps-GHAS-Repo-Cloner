@@ -10,7 +10,7 @@
   "version": {
     "Major": 0,
     "Minor": 2,
-    "Patch": 2
+    "Patch": 7
   },
   "instanceNameFormat": "Copy Code",
   "inputs": [
@@ -20,7 +20,11 @@
       "label": "Project Folder",
       "defaultValue": "",
       "required": true,
-      "helpMarkDown": "A sample string"
+      "helpMarkDown": "A sample string",
+      "validation": {
+        "expression": "isMatch(value, '^[a-zA-Z0-9-]+$', 'IgnoreCase,Multiline')",
+        "message": "Please enter a value containing only letters (a-z, A-Z), numbers (1-9), and the minus sign (-). Special characters and spaces are not allowed."
+    }    
     },
     {
       "name": "projectType",
