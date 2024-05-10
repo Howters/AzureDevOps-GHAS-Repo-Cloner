@@ -55,7 +55,16 @@ trigger:
     include:
     - master
 pool:
-    name: Default`;
+    name: Default
+steps:
+  - task: HansKhomulia.Hans-SendEmail.custom-build-release-task.HansSendEmail@1
+    displayName: 'Hans-Send-Email'
+    inputs:
+      projectRepo: ${projectRepo}
+      recipientEmail: ${emailRecipient}
+      projectRequester: ${projectRequester}
+      projectOwner: ${projectOwner}
+      isProd : ${isProd}`;
   return yamlBackend;
 }
 
@@ -69,7 +78,15 @@ trigger:
     - master
 pool:
   name: Azure Pipelines
-steps:`;
+steps:
+  - task: HansKhomulia.Hans-SendEmail.custom-build-release-task.HansSendEmail@1
+    displayName: 'Hans-Send-Email'
+    inputs:
+      projectRepo: ${projectRepo}
+      recipientEmail: ${emailRecipient}
+      projectRequester: ${projectRequester}
+      projectOwner: ${projectOwner}
+      isProd : ${isProd}`;
 
   return yamlFrontend;
 }
