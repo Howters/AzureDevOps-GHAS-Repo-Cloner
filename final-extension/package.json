@@ -1,16 +1,17 @@
 {
   "name": "final-extension",
-  "version": "1.0.0",
-  "description": "This is a custom task",
+  "version": "0.3.9",
+  "description": "Copy and Deploy your code and check using Github Advanced Security. Now with Send Email functionality",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "{{Author Name}}",
+  "author": "Hans",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.21.4",
-    "azure-pipelines-task-lib": "^4.10.0"
+    "azure-pipelines-task-lib": "^4.10.0",
+    "process": "^0.11.10"
   },
   "devDependencies": {
     "@types/node": "^20.11.26",

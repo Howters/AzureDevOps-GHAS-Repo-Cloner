@@ -9,22 +9,22 @@
   "author": "Hans",
   "version": {
     "Major": 0,
-    "Minor": 2,
-    "Patch": 7
+    "Minor": 3,
+    "Patch": 14
   },
   "instanceNameFormat": "Copy Code",
   "inputs": [
     {
-      "name": "projectFolder",
+      "name": "projectfolder",
       "type": "string",
-      "label": "Project Folder",
+      "label": "Repository Name-14",
       "defaultValue": "",
       "required": true,
-      "helpMarkDown": "A sample string",
+      "helpMarkDown": "Name of the Repository that will be checked. This will replace the existing repo if it exists, and create a new one if it does not. Best practice : Uses the same name as the Repository, for example: Repository name is SSG10.Binus.API, write the Repository name here.",
       "validation": {
-        "expression": "isMatch(value, '^[a-zA-Z0-9-]+$', 'IgnoreCase,Multiline')",
-        "message": "Please enter a value containing only letters (a-z, A-Z), numbers (1-9), and the minus sign (-). Special characters and spaces are not allowed."
-    }    
+        "expression": "isMatch(value, '^[a-zA-Z0-9-.]+$', 'IgnoreCase,Multiline')",
+        "message": "Please enter a value containing only letters (a-z, A-Z), numbers (1-9), the period or dot sign (.), and the minus sign (-). Special characters such as brackets ()[] and spaces are not allowed."
+    } 
     },
     {
       "name": "projectType",
@@ -32,11 +32,19 @@
       "label": "Project Type",
       "defaultValue": "",
       "required": true,
-      "helpMarkDown": "Select one",
+      "helpMarkDown": "Type of the project being checked. Press Back-end for any Backend services that use Binus.WS.Pattern (or .NET), press Front-end for any services in JavaScript. Azure Function not supported for now.",
       "options": {
         "front-end": "Front-End",
         "back-end": "Back-End"
       }
+    },
+    {
+      "name": "recipientEmail",
+      "type": "string",
+      "label": "Recipient's Email (Seperated with ';' without space)",
+      "defaultValue": "",
+      "required": false,
+      "helpMarkDown": "The recipient(s)'s email that will receive the result of the scanning. Use ';' as the seperator between emails without any spaces (example: a@binus.edu;b@binus.edu)."
     },
     {
       "name": "projectRequester",
@@ -44,7 +52,7 @@
       "label": "Your Email",
       "defaultValue": "",
       "required": true,
-      "helpMarkDown": "Please input your name / email here"
+      "helpMarkDown": "Please input your email here (must be @edu)"
     },
     {
       "name": "projectOwner",
@@ -52,7 +60,7 @@
       "label": "Project Owner",
       "defaultValue": "",
       "required": true,
-      "helpMarkDown": "The division of the Repository/Project's owner",
+      "helpMarkDown": "The division of the Repository/Project's owner, this division is responsible for the project running.",
       "options": {
         "SSG 1 Cluster 1": "SSG 1 Cluster 1",
         "SSG 1 Cluster 2": "SSG 1 Cluster 2",
@@ -105,6 +113,31 @@
         "SSG 10 Cluster 4": "SSG 10 Cluster 4",
         "SSG 10 Cluster 5": "SSG 10 Cluster 5"
       }
+    },
+    {
+      "name": "isProd",
+      "type": "boolean",
+      "label": "Final Check for deployment to Production",
+      "defaultValue": "",
+      "required": true,
+      "helpMarkDown": "Untick this box if you are a staff / just scanning code for vulnerabilities. Tick this box if you are trying to scan this project for final security Testing and going to deploy this code to Production. Any vulnerabilities found will alert the Cyber Security Team."
+    },
+    {
+      "name": "isProdConfirmation",
+      "type": "pickList",
+      "label": "Warning : This will notify Cyber Security Team. Deploy this code for Production?",
+      "defaultValue": "No",
+      "required": true,
+      "helpMarkDown": "If you are unsure, untick the box. After confirmation, your code will be reviewed and automatically send notification to Cyber Security Team if any vulnerabilites are found; these are required to be fixed according to Cyber Security requirements.",
+      "options": {
+        "false": "No",
+        "true": "Yes"
+      },
+      "validation": {
+        "expression": "isMatch(value, '^true$', 'IgnoreCase,Multiline')",
+        "message": "Value must be Yes to deploy the code for production."
+      },
+      "visibleRule": "isProd = true"
     }
   ],
   "execution": {
