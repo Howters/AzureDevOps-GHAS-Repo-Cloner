@@ -255,6 +255,7 @@ function run() {
               ' && echo ".git directory deleted."' +
               ' && git config --global user.email "{{email}}"' +
               ' && git config --global user.name "{Name}"' +
+              ' && git init' +
               ' && git remote add origin https://{Username}:{{Pat}}@dev.azure.com/hanskhomulia/GHAS-FINAL/_git/' +
               inputString +
               ' && git add .' +
