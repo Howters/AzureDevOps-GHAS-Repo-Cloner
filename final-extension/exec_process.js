@@ -1,278 +1,267 @@
-"use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+"use strict"
+var __awaiter =
+  (this && this.__awaiter) ||
+  function (thisArg, _arguments, P, generator) {
+    function adopt(value) {
+      return value instanceof P
+        ? value
+        : new P(function (resolve) {
+            resolve(value)
+          })
+    }
     return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const tl = require("azure-pipelines-task-lib/task");
-const axios = require("axios")
-const ExcelJS = require('exceljs');
-const nodemailer = require('nodemailer');
-const fs = require('fs');
-
-
-
-
-async function run() {
-
+      function fulfilled(value) {
         try {
-            const projectRepo = tl.getInput("projectRepo", true);
-            const recipientEmail = tl.getInput("recipientEmail", true);
-            const emailsArray = recipientEmail.split(';').map(email => email.trim());
-            //Add cyber's email to the recipient email array
-            emailsArray.push("{{Cyber email}}")
-
-            var execProcess = require("./exec_process.js");
-            var cred = 
-            "{{Username}}:{{PAT}}"
-            var conversion = Buffer.from(cred).toString("base64");
-            // var body = {
-            //     name: inputString
-            // };
-            let header = {
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: "Basic " + conversion
-                }
-            };
-            axios.get(
-                `https://advsec.dev.azure.com/{{Org}}/{{Project}}/_apis/alert/repositories/${projectRepo}/alerts?api-version=7.2-preview.1&top=1000`,
-                header
-            )
-            .then(function (response) {
-                if(response.data.count == 0){
-                    //If there are no alerts
-                    const transporter = nodemailer.createTransport({
-                        service: "Outlook365",
-                        host: "smtp.office365.com",
-                        port: 587,
-                        secure: true,
-                        auth: {
-                          user: "{{email}}",
-                          pass: "{{app-password}}",
-                        },
-                      });
-                    // Create email message
-                    const mailOptions = {
-                        from: '{{sender-email}}',
-                        to: emailsArray,
-                        subject: `GHAS-${projectRepo}`,
-                        text: `These are no alerts found on the repository : ${projectRepo} `,
-                    };
-                    
-                    // Send email
-                    transporter.sendMail(mailOptions, function(error, info){
-                        if (error) {
-                        console.error('Error sending email:', error);
-                        } else {
-                        console.log('Email sent:', info.response);
-                        }
-                    });
-                }
-                else{
-                    //If there are  alerts
-                    const alerts = response.data.value;
-              
-                    // Filter alerts based on tool name
-                    const codeQLAlerts = alerts.filter(alert => alert.tools.some(tool => tool.name === "CodeQL"));
-                    const codeQLCounts = codeQLAlerts.length;
-                    const dependencyScanningAlerts = alerts.filter(alert => alert.tools.some(tool => tool.name === "Advanced Security Dependency Scanning"));
-                    const dependencyCounts = dependencyScanningAlerts.length;
-                    const secretsScanningAlerts = alerts.filter(alert => alert.tools.some(tool => tool.name === "Advanced Security Secrets Scanning"));
-                    const secretCounts = secretsScanningAlerts.length;
-
-                  
-                    // Prepare Excel workbook and worksheets
-                    const workbook = new ExcelJS.Workbook();
-                    const codeQLWorksheet = workbook.addWorksheet('CodeQL Scanning');
-                    const dependencyScanningWorksheet = workbook.addWorksheet('Dependency Scanning');
-                    const secretsScanningWorksheet = workbook.addWorksheet('Secrets Scanning');
-                  
-                    const dependencyScanningHeaders = ['NO.', 'Alert ID', 'Severity', 'Title', 'Opaque ID', 'Friendly Name', 'Description', 'Resources', 'Help Message', 'CVE ID', 'Repository URL', 'First Seen Date', 'Last Seen Date', 'Introduced Date', 'State', 'Item URL', 'Alert Link'];
-    
-                    const codeQLHeaders = ['NO.', 'Alert ID', 'Severity', 'Title', 'Opaque ID', 'Friendly Name', 'Description', 'Resources', 'Help Message', 'Repository URL', 'First Seen Date', 'Last Seen Date', 'Introduced Date', 'State', 'Item URL', 'Alert Link'];
-                    
-                    const secretHeaders = ['NO.', 'Alert ID', 'Severity', 'Title', 'Opaque ID', 'Friendly Name', 'Description', 'Help Message', 'Repository URL', 'First Seen Date', 'Last Seen Date', 'Introduced Date', 'State', 'Item URL', 'Truncated Secret', 'Confidence', 'Alert Link'];
-                    
-                    // Add headers to each worksheet
-                    const setWorksheetHeadersAndWidths = (worksheet, headers) => {
-                        // Add headers to the worksheet
-                        worksheet.addRow(headers);
-                    
-                        // Set the width of column A
-                        worksheet.getColumn('A').width = 5;
-    
-                        // Set the width of other columns (if needed)
-                        worksheet.columns.slice(1).forEach((column, index) => {
-                            column.width = 15; // Adjust the width as needed
-                        });
-                    };
-                    // Set headers and widths for CodeQL worksheet
-                    setWorksheetHeadersAndWidths(codeQLWorksheet, codeQLHeaders);
-    
-                    // Set headers and widths for Dependency Scanning worksheet
-                    setWorksheetHeadersAndWidths(dependencyScanningWorksheet, dependencyScanningHeaders);
-    
-                    // Set headers and widths for Secrets Scanning worksheet
-                    setWorksheetHeadersAndWidths(secretsScanningWorksheet, secretHeaders);
-    
-                    // Populate worksheets with data
-                    function populateWorksheet(alerts, worksheet, headers) {
-                        alerts.forEach((alert, index) => {
-                            const { alertId, severity, title, tools, repositoryUrl, firstSeenDate, lastSeenDate, introducedDate, state, truncatedSecret, confidence, physicalLocations } = alert;
-                            const tool = tools[0];
-                            const description = tool.rules[0].description;
-                            const alertLink = `https://dev.azure.com/{{Org}}/{{Project}}/_git/${projectRepo}/alerts/${alertId}?branch=refs%2Fheads%2Fmaster`
-                            const filepath = physicalLocations.length > 0 ? physicalLocations[0].filePath : '';
-                    
-                            // Create a new row array to hold the data
-                            const rowData = [];
-                    
-                            // Iterate through each header and populate the row data
-                            headers.forEach(header => {
-                                switch (header) {
-                                    case 'NO.':
-                                        // Add the index as the first column for numbering
-                                        rowData.push(index + 1);
-                                        break;
-                                    case 'Alert ID':
-                                        rowData.push(alertId);
-                                        break;
-                                    case 'Severity':
-                                        rowData.push(severity);
-                                        break;
-                                    case 'Title':
-                                        rowData.push(title);
-                                        break;
-                                    case 'Opaque ID':
-                                        rowData.push(tool.rules[0].opaqueId);
-                                        break;
-                                    case 'Friendly Name':
-                                        rowData.push(tool.rules[0].friendlyName);
-                                        break;
-                                    case 'Description':
-                                        rowData.push(description);
-                                        break;
-                                    case 'Resources':
-                                        rowData.push(tool.rules[0].resources || '');
-                                        break;
-                                    case 'Help Message':
-                                        rowData.push(tool.rules[0].helpMessage || '');
-                                        break;
-                                    case 'CVE ID':
-                                        if (tool.name === 'Advanced Security Dependency Scanning' && tool.rules[0].additionalProperties) {
-                                            const { cveId } = tool.rules[0].additionalProperties;
-                                            rowData.push(cveId || '');
-                                        } else {
-                                            rowData.push('');
-                                        }
-                                        break;
-                                    case 'Repository URL':
-                                        rowData.push(repositoryUrl);
-                                        break;
-                                    case 'First Seen Date':
-                                        rowData.push(firstSeenDate);
-                                        break;
-                                    case 'Last Seen Date':
-                                        rowData.push(lastSeenDate);
-                                        break;
-                                    case 'Introduced Date':
-                                        rowData.push(introducedDate);
-                                        break;
-                                    case 'State':
-                                        rowData.push(state);
-                                        break;
-                                    case 'Item URL':
-                                        rowData.push(alert.physicalLocations[0].versionControl.itemUrl || '');
-                                        break;
-                                    case 'Truncated Secret':
-                                        rowData.push(truncatedSecret || '');
-                                        break;
-                                    case 'Confidence':
-                                        rowData.push(confidence || '');
-                                        break;
-                                    case 'Alert Link':
-                                        rowData.push(alertLink);
-                                        break;
-                                    default:
-                                        // Handle unknown headers
-                                        rowData.push('');
-                                }
-                            });
-                    
-                            // Add the row data to the worksheet
-                            worksheet.addRow(rowData);
-                        });
-                    }
-                    
-                  
-                    populateWorksheet(codeQLAlerts, codeQLWorksheet, codeQLHeaders);
-                    
-                    populateWorksheet(dependencyScanningAlerts, dependencyScanningWorksheet, dependencyScanningHeaders);
-                    populateWorksheet(secretsScanningAlerts, secretsScanningWorksheet, secretHeaders);
-                    // Save workbook to a file
-                    const currentDate = new Date();
-                    // Function to add leading zeros to single-digit numbers
-                    const addLeadingZero = num => (num < 10 ? "0" + num : num);
-
-                    // Format date and time
-                    const formattedDate = `${addLeadingZero(currentDate.getDate())}-${addLeadingZero(currentDate.getMonth() + 1)}-${currentDate.getFullYear()}`;
-                    const formattedTime = `${addLeadingZero(currentDate.getHours())}${addLeadingZero(currentDate.getMinutes())}`;
-                    const filePath = `vulnerabilities_${projectRepo}_${formattedDate}_${formattedTime}.xlsx`
-
-                    workbook.xlsx.writeFile(filePath).then(function() {
-    
-                      console.log('Excel file generated successfully.');
-                      const transporter = nodemailer.createTransport({
-                        service: "Outlook365",
-                        host: "smtp.office365.com",
-                        port: 587,
-                        secure: true,
-                        auth: {
-                          user: "{{email}}",
-                          pass: "{{app-password}}",
-                        },
-                      });
-                    // Create email message
-                    const mailOptions = {
-                        from: '{{sender-email}}',
-                        to: emailsArray,
-                        subject: `Scanning Result of GHAS Project ${projectRepo} at ${formattedDate}_${formattedTime}`,
-                        text: `There are ${codeQLCounts} vulnerabilities found on Code Scanning, ${dependencyCounts} vulnerabilities found on Dependency Scanning, and ${secretCounts} vulnerabilities found on Secret Scanning`,
-                        attachments: [
-                        {
-                            filename: filePath,
-                            content: fs.createReadStream(filePath) // path to your Excel file
-                        }
-                        ]
-                    };
-                    
-                    // Send email
-                    transporter.sendMail(mailOptions, function(error, info){
-                        if (error) {
-                        console.error('Error sending email:', error);
-                        } else {
-                        console.log('Email sent:', info.response);
-                        }
-                    });
-                    });
-                }
-               
-              })
-              .catch(function (error) {
-                console.error('Error fetching data:', error);
-              });
-    
+          step(generator.next(value))
+        } catch (e) {
+          reject(e)
         }
-        catch (err) {
-            tl.setResult(tl.TaskResult.Failed, err.message);
+      }
+      function rejected(value) {
+        try {
+          step(generator["throw"](value))
+        } catch (e) {
+          reject(e)
         }
-  
-        
+      }
+      function step(result) {
+        result.done
+          ? resolve(result.value)
+          : adopt(result.value).then(fulfilled, rejected)
+      }
+      step((generator = generator.apply(thisArg, _arguments || [])).next())
+    })
+  }
+
+
+Object.defineProperty(exports, "__esModule", { value: true })
+const tl = require("azure-pipelines-task-lib/task")
+const axios = require("axios")
+const fs = require("fs")
+const path = require('path')
+const process = require("process")
+var osChecking = process.platform
+// Check platform (Windows or Linux)
+console.log("Platform is : " + osChecking)
+var commandString = 'rm -rf .git'
+if (osChecking === "win32") {
+  commandString = 'rd /s /q .git'
 }
+
+function yamlBackend(folderPath, projectRepo, emailRecipient, projectOwner, projectRequester, isProd) {
+  const yamlBackend = `### Do Not Remove This .yaml File!
+trigger:
+  branches:
+    include:
+    - master
+pool:
+    name: Default`;
+  return yamlBackend;
+}
+
+function yamlFrontend(projectRepo, emailRecipient, projectOwner, projectRequester, isProd){
+  const yamlFrontend =
+  //Front-End Yaml
+  `### Do Not Remove This .yaml File!
+trigger:
+  branches:
+    include:
+    - master
+pool:
+  name: Azure Pipelines
+steps:`;
+
+  return yamlFrontend;
+}
+
+
+function findNugetConfigPath(startDir) {
+  const queue = [startDir];
+  try{
+    while (queue.length > 0) {
+        const currentDir = queue.shift();
+        console.log("Searching for Nuget.config...")
+        const files = fs.readdirSync(currentDir);
+          for (const file of files) {
+              const filePath = path.join(currentDir, file);
+              const stat = fs.statSync(filePath);
+              console.log("Current File Path :" + filePath);
+              if (stat.isDirectory()) {
+                  queue.push(filePath);
+              } else if (file.toLowerCase() === 'nuget.config') {
+                  console.log("Nuget.config Found at path : " + startDir )
+                  console.log("Final Path :" + filePath.replace(startDir, ''))
+                  if (osChecking === "win32") {
+                    console.log("Resulting Path : " + filePath.replace(startDir,'').replace(/\//g, '/'))
+                    return filePath.replace(startDir,'').replace(/\//g, '/');
+                } else {
+                    console.log("Resulting Path : " + filePath.replace(startDir,'').replace(/\\/g, '/'))
+                    return filePath.replace(startDir,'').replace(/\\/g, '/');
+                }
+              }
+          }
+      }
+      throw "Error : NuGet.config file not found"
+    } catch (err) {
+      console.log(err);
+    }
+      return null; 
+}
+
+function runPipeline(header,pipelineId){
+  var runBody = {
+      resources: {
+        repositories: {
+            self: {
+                refName: "refs/heads/master"
+            }
+        }
+    }
+  };
+    axios
+    .post(
+      `https://dev.azure.com/{{Org}}/{Project}/_apis/pipelines/${pipelineId}/runs?api-version=7.1-preview.1`,
+      runBody,
+      header
+    ).then(function(response){
+      console.log("Pipeline Run - Success:");
+      console.log(response);
+    })
+  .catch(function(error){
+      console.log("Pipeline Run - Fail:")
+      console.log(error);
+      tl.setResult(tl.TaskResult.Failed, error);
+    })
+  }
+
+
+
+
+function run() {
+  try {
+      const inputString = tl.getInput("projectFolder", true)
+      const inputType = tl.getInput("projectType", true)
+      const recipientEmail = tl.getInput("recipientEmail", false)
+      const projectOwner = tl.getInput("projectOwner", true)
+      const projectRequester = tl.getInput("projectRequester", true)
+      const isProd = tl.getInput("isProd", true);
+      // const inputType = "back-end";
+      // const inputString = "HEHE-31";
+      var execProcess = require("./exec_process.js");
+      var cred = 
+      "{{Username}}:{{PAT}}"
+      var conversion = Buffer.from(cred).toString("base64");
+      var script, pipelineId;
+      var body = {
+          name: inputString
+      };
+      if(inputType == "back-end"){
+        var folderPath = findNugetConfigPath(process.cwd());
+        folderPath = folderPath.slice(1)
+        if(folderPath != null){
+          console.log(folderPath);
+        }
+      }
+      let header = {
+          headers: {
+              "Content-Type": "application/json",
+              Authorization: "Basic " + conversion
+          }
+      };
+      axios
+      .post(
+        "https://dev.azure.com/{{Org}}/{Project}/_apis/git/repositories?api-version=7.1-preview.1",
+        body,
+        header
+      )
+      // Kalau sukses buat repo
+      .then(function (response) {
+           //Buat pipeline
+        var repoId = response.data.id;
+        var pipeBody = {
+            folder: inputString,
+            name: inputString,
+            configuration: {
+                type: "yaml",
+                path: inputString + ".yaml",
+                repository: {
+                    id: repoId,
+                    name: inputString,
+                    type: "azureReposGit"
+                }
+            }
+        };
+      axios
+      .post(
+        "https://dev.azure.com/{{Org}}/{Project}/_apis/pipelines?api-version=6.0-preview.1",
+          pipeBody,
+          header
+      )
+      .then(function (response) {
+        console.log("Pipeline Created with response : ")
+        pipelineId = response.data.id;
+        console.log(response)
+      })
+      .catch(function (error) {
+        if(error.response.status == "409"){
+          console.log("Conflict: The pipeline has been made already before. Skipping create pipeline.")
+          console.log(error)
+        }
+        else{
+          console.log(error);
+          tl.setResult(tl.TaskResult.Failed, error);
+        }
+      });
+      })
+      //Kalau fail buat repo
+      .catch(function (error) {
+        if(error.response.status == "409"){
+          console.log("Conflict: The Repo Has Been Made before. Skipping create repo.")
+          console.log(error)
+        }
+        else {
+          console.log(error);
+          tl.setResult(tl.TaskResult.Failed, error);
+        }
+      });
+          if (inputType == "back-end") {
+            // The project is Back-end
+            script = yamlBackend(folderPath, inputString, recipientEmail, projectOwner, projectRequester, isProd);
+          }
+          else{
+            script = yamlFrontend(inputString, recipientEmail, projectOwner, projectRequester, isProd);
+          }
+          fs.writeFileSync(inputString + ".yaml", script);
+          // Git commands
+          execProcess.result(
+              commandString +
+              ' && echo ".git directory deleted."' +
+              ' && git config --global user.email "{{email}}"' +
+              ' && git config --global user.name "{Name}"' +
+              ' && git init' +
+              ' && git remote add origin https://{Username}:{{Pat}}@dev.azure.com/hanskhomulia/GHAS-FINAL/_git/' +
+              inputString +
+              ' && git add .' +
+              ' && git commit -m "Initial commit"' +
+              ' && git push --force origin master' +
+              ' && echo "Git has successfully pushed"',
+              function (err, response) {
+                  if (!err) {
+                      console.log(response);
+                      //Run pipeline automatically
+                      setTimeout(function() {
+                        runPipeline(header, pipelineId);
+                    }, 2500);
+                  } else {
+                      console.log(err);
+                      tl.setResult(tl.TaskResult.Failed, err);
+                  }
+              }
+          );
+        }
+  catch (err) {
+      tl.setResult(tl.TaskResult.Failed, err.message);
+  }       
+}
+
 run();
