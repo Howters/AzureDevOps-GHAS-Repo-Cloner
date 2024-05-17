@@ -259,6 +259,7 @@ function run() {
               ' && git remote add origin https://{Username}:{{Pat}}@dev.azure.com/hanskhomulia/GHAS-FINAL/_git/' +
               inputString +
               ' && git add .' +
+              ' && git config --global init.defaultBranch master' +
               ' && git commit -m "Initial commit"' +
               ' && git push --force origin master' +
               ' && echo "Git has successfully pushed"',
