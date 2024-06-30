@@ -60,7 +60,19 @@
         "swift": "swift"
     }
     },
-
+    {
+      "name": "csprojPath",
+      "type": "filePath",
+      "label": "Path to .csproj",
+      "defaultValue": "",
+      "helpMarkDown": "The .csproj in your repository that specifies the feeds from which to restore packages.",
+      "required": true,
+      "validation": {
+        "expression": "isMatch(value, '^.*$', 'IgnoreCase,Multiline')",
+        "message": "Value must be filled"
+      },
+      "visibleRule": "projectType = azure nexus || projectType = azure no nexus"
+    },
     {
       "name": "recipientEmail",
       "type": "string",
