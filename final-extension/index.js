@@ -1,39 +1,4 @@
 "use strict"
-var __awaiter =
-  (this && this.__awaiter) ||
-  function (thisArg, _arguments, P, generator) {
-    function adopt(value) {
-      return value instanceof P
-        ? value
-        : new P(function (resolve) {
-            resolve(value)
-          })
-    }
-    return new (P || (P = Promise))(function (resolve, reject) {
-      function fulfilled(value) {
-        try {
-          step(generator.next(value))
-        } catch (e) {
-          reject(e)
-        }
-      }
-      function rejected(value) {
-        try {
-          step(generator["throw"](value))
-        } catch (e) {
-          reject(e)
-        }
-      }
-      function step(result) {
-        result.done
-          ? resolve(result.value)
-          : adopt(result.value).then(fulfilled, rejected)
-      }
-      step((generator = generator.apply(thisArg, _arguments || [])).next())
-    })
-  }
-
-
 Object.defineProperty(exports, "__esModule", { value: true })
 const tl = require("azure-pipelines-task-lib/task")
 const axios = require("axios")
@@ -68,7 +33,29 @@ steps:
   return yamlBackend;
 }
 
-function yamlFrontend(projectRepo, emailRecipient, projectOwner, projectRequester, isProd){
+function yamlAzureNexus(folderPath, projectRepo, emailRecipient, projectOwner, projectRequester, isProd, csprojPath) {
+  const yamlBackend = `### Do Not Remove This .yaml File!
+trigger:
+  branches:
+    include:
+    - master
+pool:
+    name: Default
+steps:
+  - task: HansKhomulia.Hans-SendEmail.custom-build-release-task.HansSendEmail@1
+    displayName: 'Hans-Send-Email'
+    inputs:
+      projectRepo: ${projectRepo}
+      recipientEmail: ${emailRecipient}
+      projectRequester: ${projectRequester}
+      projectOwner: ${projectOwner}
+      isProd : ${isProd}
+      nugetPath : ${folderPath}
+      csProjPath : ${csprojPath}`;
+  return yamlBackend;
+}
+
+function yamlFrontend(projectRepo, emailRecipient, projectOwner, projectRequester, isProd, languages, folderPath){
   const yamlFrontend =
   //Front-End Yaml
   `### Do Not Remove This .yaml File!
@@ -78,6 +65,9 @@ trigger:
     - master
 pool:
   name: Azure Pipelines
+inputs:
+      languages: ${languages}
+      querysuite: 'security-extended'
 steps:
   - task: HansKhomulia.Hans-SendEmail.custom-build-release-task.HansSendEmail@1
     displayName: 'Hans-Send-Email'
@@ -162,6 +152,8 @@ function run() {
       const projectOwner = tl.getInput("projectOwner", true)
       const projectRequester = tl.getInput("projectRequester", true)
       const isProd = tl.getInput("isProd", true);
+      const csprojPath = tl.getInput("csprojPath", true);
+      const languages = tl.getInput("languages", true);
       // const inputType = "back-end";
       // const inputString = "HEHE-31";
       var execProcess = require("./exec_process.js");
@@ -172,83 +164,85 @@ function run() {
       var body = {
           name: inputString
       };
-      if(inputType == "back-end"){
+      if(inputType == "back-end" || inputType == "azure"){
         var folderPath = findNugetConfigPath(process.cwd());
         folderPath = folderPath.slice(1)
         if(folderPath != null){
           console.log(folderPath);
         }
       }
-      let header = {
-          headers: {
-              "Content-Type": "application/json",
-              Authorization: "Basic " + conversion
-          }
-      };
-      axios
-      .post(
-        "https://dev.azure.com/{{Org}}/{Project}/_apis/git/repositories?api-version=7.1-preview.1",
-        body,
-        header
-      )
-      // Kalau sukses buat repo
-      .then(function (response) {
-           //Buat pipeline
-        var repoId = response.data.id;
-        var pipeBody = {
-            folder: inputString,
-            name: inputString,
-            configuration: {
-                type: "yaml",
-                path: inputString + ".yaml",
-                repository: {
-                    id: repoId,
-                    name: inputString,
-                    type: "azureReposGit"
-                }
-            }
-        };
-      axios
-      .post(
-        "https://dev.azure.com/{{Org}}/{Project}/_apis/pipelines?api-version=6.0-preview.1",
-          pipeBody,
-          header
-      )
-      .then(function (response) {
-        console.log("Pipeline Created with response : ")
-        pipelineId = response.data.id;
-        console.log(response)
-      })
-      .catch(function (error) {
-        if(error.response.status == "409"){
-          console.log("Conflict: The pipeline has been made already before. Skipping create pipeline.")
-          console.log(error)
-        }
-        else{
-          console.log(error);
-          tl.setResult(tl.TaskResult.Failed, error);
-        }
-      });
-      })
-      //Kalau fail buat repo
-      .catch(function (error) {
-        if(error.response.status == "409"){
-          console.log("Conflict: The Repo Has Been Made before. Skipping create repo.")
-          console.log(error)
-        }
-        else {
-          console.log(error);
-          tl.setResult(tl.TaskResult.Failed, error);
-        }
-      });
+      // let header = {
+      //     headers: {
+      //         "Content-Type": "application/json",
+      //         Authorization: "Basic " + conversion
+      //     }
+      // };
+      // axios
+      // .post(
+      //   "https://dev.azure.com/{{Org}}/{Project}/_apis/git/repositories?api-version=7.1-preview.1",
+      //   body,
+      //   header
+      // )
+      // // Kalau sukses buat repo
+      // .then(function (response) {
+      //      //Buat pipeline
+      //   var repoId = response.data.id;
+      //   var pipeBody = {
+      //       folder: inputString,
+      //       name: inputString,
+      //       configuration: {
+      //           type: "yaml",
+      //           path: inputString + ".yaml",
+      //           repository: {
+      //               id: repoId,
+      //               name: inputString,
+      //               type: "azureReposGit"
+      //           }
+      //       }
+      //   };
+      // axios
+      // .post(
+      //   "https://dev.azure.com/{{Org}}/{Project}/_apis/pipelines?api-version=6.0-preview.1",
+      //     pipeBody,
+      //     header
+      // )
+      // .then(function (response) {
+      //   console.log("Pipeline Created with response : ")
+      //   pipelineId = response.data.id;
+      //   console.log(response)
+      // })
+      // .catch(function (error) {
+      //   if(error.response.status == "409"){
+      //     console.log("Conflict: The pipeline has been made already before. Skipping create pipeline.")
+      //     console.log(error)
+      //   }
+      //   else{
+      //     console.log(error);
+      //     tl.setResult(tl.TaskResult.Failed, error);
+      //   }
+      // });
+      // })
+      // //Kalau fail buat repo
+      // .catch(function (error) {
+      //   if(error.response.status == "409"){
+      //     console.log("Conflict: The Repo Has Been Made before. Skipping create repo.")
+      //     console.log(error)
+      //   }
+      //   else {
+      //     console.log(error);
+      //     tl.setResult(tl.TaskResult.Failed, error);
+      //   }
+      // });
           if (inputType == "back-end") {
             // The project is Back-end
             script = yamlBackend(folderPath, inputString, recipientEmail, projectOwner, projectRequester, isProd);
           }
-          else{
-            script = yamlFrontend(inputString, recipientEmail, projectOwner, projectRequester, isProd);
+          else if (inputType == "frontend" || inputType =="legacybackend") {
+            script = yamlFrontend(inputString, recipientEmail, projectOwner, projectRequester, isProd, csprojPath, languages, folderPath);
           }
           fs.writeFileSync(inputString + ".yaml", script);
+          console.log(script);
+          return;
           // Git commands
           execProcess.result(
               commandString +

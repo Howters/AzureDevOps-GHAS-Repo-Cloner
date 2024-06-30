@@ -2,7 +2,7 @@
     "manifestVersion": 1,
     "id": "Hans-CopyCode",
     "name": "Hans-CopyCode",
-    "version": "0.3.14",
+    "version": "0.3.48",
     "publisher": "HansKhomulia",
     "targets": [
         {
@@ -31,6 +31,19 @@
             "properties": {
                 "name": "final-extension"
             }
+        },
+        {  
+        "id": "sample-work-item-form-control",
+        "type": "ms.vss-work-web.work-item-form-control",
+        "description": "Custom work item form control",
+        "targets": [
+            "ms.vss-work-web.work-item-form"
+        ],
+        "properties": {
+            "name": "My Control",
+            "uri": "workItemControl.html",
+            "height": 600
         }
+    }
     ]
 }

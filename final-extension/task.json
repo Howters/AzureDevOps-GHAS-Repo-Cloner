@@ -10,14 +10,14 @@
   "version": {
     "Major": 0,
     "Minor": 3,
-    "Patch": 14
+    "Patch": 48
   },
   "instanceNameFormat": "Copy Code",
   "inputs": [
     {
       "name": "projectfolder",
       "type": "string",
-      "label": "Repository Name-14",
+      "label": "Repository Name-48",
       "defaultValue": "",
       "required": true,
       "helpMarkDown": "Name of the Repository that will be checked. This will replace the existing repo if it exists, and create a new one if it does not. Best practice : Uses the same name as the Repository, for example: Repository name is SSG10.Binus.API, write the Repository name here.",
@@ -34,9 +34,44 @@
       "required": true,
       "helpMarkDown": "Type of the project being checked. Press Back-end for any Backend services that use Binus.WS.Pattern (or .NET), press Front-end for any services in JavaScript. Azure Function not supported for now.",
       "options": {
-        "front-end": "Front-End",
-        "back-end": "Back-End"
+        "frontend": "Front-End",
+        "backend": "Back-End",
+        "legacybackend": "Legacy Back-End",
+        "azure nexus": "Azure Nexus",
+        "azure no nexus": "Azure No Nexus"
       }
+    },
+    {
+      "name": "languages",
+      "type": "pickList",
+      "label": "Select the programming language",
+      "defaultValue": "javascript",
+      "helpMarkDown": "The programming language used in this project",
+      "required": true,
+      "visibleRule": "projectType = legacybackend || projectType = frontend",
+      "options": {
+        "cpp": "cpp",
+        "csharp": "csharp",
+        "javascript": "javascript",
+        "go": "go",
+        "java": "java",
+        "python": "python",
+        "ruby": "ruby",
+        "swift": "swift"
+    }
+    },
+    {
+      "name": "csprojPath",
+      "type": "filePath",
+      "label": "Path to .csproj",
+      "defaultValue": "",
+      "helpMarkDown": "The .csproj in your repository that specifies the feeds from which to restore packages.",
+      "required": true,
+      "validation": {
+        "expression": "isMatch(value, '^.*$', 'IgnoreCase,Multiline')",
+        "message": "Value must be filled"
+      },
+      "visibleRule": "projectType = azure nexus || projectType = azure no nexus"
     },
     {
       "name": "recipientEmail",
@@ -44,7 +79,12 @@
       "label": "Recipient's Email (Seperated with ';' without space)",
       "defaultValue": "",
       "required": false,
-      "helpMarkDown": "The recipient(s)'s email that will receive the result of the scanning. Use ';' as the seperator between emails without any spaces (example: a@binus.edu;b@binus.edu)."
+      "helpMarkDown": "The recipient(s)'s email that will receive the result of the scanning. Use ';' as the seperator between emails without any spaces (example: a@binus.edu;b@binus.edu).",
+      "validation": {
+          "expression": "isMatch(value, '^([\\w.-]+@[\\w.-]+(?:;[\\w.-]+@[\\w.-]+)*)?$', 'IgnoreCase,Multiline')",
+          "message": "Invalid email format. Please enter valid email addresses separated by ';' without spaces."
+      }
+
     },
     {
       "name": "projectRequester",
@@ -52,7 +92,11 @@
       "label": "Your Email",
       "defaultValue": "",
       "required": true,
-      "helpMarkDown": "Please input your email here (must be @edu)"
+      "helpMarkDown": "Please input your email here (must be @edu)",
+      "validation": {
+        "expression": "isMatch(value, '^.*@binus\\.edu$', 'IgnoreCase')",
+        "message": "The email must end with @binus.edu"
+    }
     },
     {
       "name": "projectOwner",
@@ -118,7 +162,7 @@
       "name": "isProd",
       "type": "boolean",
       "label": "Final Check for deployment to Production",
-      "defaultValue": "",
+      "defaultValue": false,
       "required": true,
       "helpMarkDown": "Untick this box if you are a staff / just scanning code for vulnerabilities. Tick this box if you are trying to scan this project for final security Testing and going to deploy this code to Production. Any vulnerabilities found will alert the Cyber Security Team."
     },
@@ -126,18 +170,17 @@
       "name": "isProdConfirmation",
       "type": "pickList",
       "label": "Warning : This will notify Cyber Security Team. Deploy this code for Production?",
-      "defaultValue": "No",
+      "defaultValue": "",
       "required": true,
       "helpMarkDown": "If you are unsure, untick the box. After confirmation, your code will be reviewed and automatically send notification to Cyber Security Team if any vulnerabilites are found; these are required to be fixed according to Cyber Security requirements.",
       "options": {
-        "false": "No",
         "true": "Yes"
       },
+      "visibleRule": "isProd = true",
       "validation": {
-        "expression": "isMatch(value, '^true$', 'IgnoreCase,Multiline')",
+        "expression": "isMatch(value, '^$|true$', 'IgnoreCase,Multiline')",
         "message": "Value must be Yes to deploy the code for production."
-      },
-      "visibleRule": "isProd = true"
+      }
     }
   ],
   "execution": {
