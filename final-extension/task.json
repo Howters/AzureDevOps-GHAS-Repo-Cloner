@@ -10,14 +10,14 @@
   "version": {
     "Major": 0,
     "Minor": 3,
-    "Patch": 48
+    "Patch": 49
   },
   "instanceNameFormat": "Copy Code",
   "inputs": [
     {
       "name": "projectfolder",
       "type": "string",
-      "label": "Repository Name-48",
+      "label": "Repository Name-49",
       "defaultValue": "",
       "required": true,
       "helpMarkDown": "Name of the Repository that will be checked. This will replace the existing repo if it exists, and create a new one if it does not. Best practice : Uses the same name as the Repository, for example: Repository name is SSG10.Binus.API, write the Repository name here.",

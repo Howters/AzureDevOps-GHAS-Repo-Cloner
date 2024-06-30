@@ -238,7 +238,7 @@ function run() {
             script = yamlBackend(folderPath, inputString, recipientEmail, projectOwner, projectRequester, isProd);
           }
           else if (inputType == "frontend" || inputType =="legacybackend") {
-            script = yamlFrontend(inputString, recipientEmail, projectOwner, projectRequester, isProd, csprojPath, languages, folderPath);
+            script = yamlFrontend(inputString, recipientEmail, projectOwner, projectRequester, isProd, languages, csprojPath, folderPath);
           }
           fs.writeFileSync(inputString + ".yaml", script);
           console.log(script);
